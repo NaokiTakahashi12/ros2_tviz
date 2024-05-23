@@ -1,0 +1,4 @@
+joint_trajectory_tui_node:
+  refresh_frequency:
+    type: double
+    default_value: 8.0
