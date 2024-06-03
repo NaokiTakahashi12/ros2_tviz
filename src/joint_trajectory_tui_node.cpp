@@ -1,3 +1,29 @@
+// MIT License
+//
+// Copyright (c) 2024 Naoki Takahashi
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+#include <urdf_model/model.h>
+#include <urdf_world/world.h>
+#include <urdf_parser/urdf_parser.h>
+
 #include <memory>
 #include <atomic>
 #include <string>
@@ -22,10 +48,6 @@
 #include <ftxui/component/loop.hpp>
 #include <ftxui/component/mouse.hpp>
 #include <joint_trajectory_tui_node_parameters.hpp>
-
-#include <urdf_model/model.h>
-#include <urdf_world/world.h>
-#include <urdf_parser/urdf_parser.h>
 
 namespace ros2_tviz
 {
@@ -234,11 +256,9 @@ void JointTrajectoryTuiNode::resetTui()
 
 void JointTrajectoryTuiNode::initializeTui(const std::string & urdf_str)
 {
-  using namespace ftxui;
-
   static bool first_call = true;
 
-  if (not first_call) {
+  if (!first_call) {
     return;
   } else {
     first_call = false;
@@ -248,9 +268,9 @@ void JointTrajectoryTuiNode::initializeTui(const std::string & urdf_str)
   model_interface_ = urdf::parseURDF(urdf_str);
 
   for (const auto & [link_name, link] : model_interface_->links_) {
-    if (not link) {
+    if (!link) {
       continue;
-    } else if (not link->parent_joint) {
+    } else if (!link->parent_joint) {
       continue;
     } else if (link->parent_joint->type == urdf::Joint::FIXED) {
       continue;
@@ -279,7 +299,7 @@ void JointTrajectoryTuiNode::initializeTui(const std::string & urdf_str)
       dest_joint_angular_velocities_.push_back(0.0F);
       dest_joint_angular_effort_.push_back(0.0F);
       position_sliders_.push_back(
-        Slider(
+        ftxui::Slider(
           " dest position: ",
           &dest_joint_angular_positions_[slider_index],
           static_cast<float>(joint->limits->lower),
@@ -288,7 +308,7 @@ void JointTrajectoryTuiNode::initializeTui(const std::string & urdf_str)
         )
       );
       velocity_sliders_.push_back(
-        Slider(
+        ftxui::Slider(
           " dest velocity: ",
           &dest_joint_angular_velocities_[slider_index],
           static_cast<float>(-joint->limits->velocity),
@@ -297,7 +317,7 @@ void JointTrajectoryTuiNode::initializeTui(const std::string & urdf_str)
         )
       );
       effort_sliders_.push_back(
-        Slider(
+        ftxui::Slider(
           " dest effort: ",
           &dest_joint_angular_effort_[slider_index],
           static_cast<float>(-joint->limits->effort),
@@ -308,18 +328,18 @@ void JointTrajectoryTuiNode::initializeTui(const std::string & urdf_str)
       slider_index++;
     }
   }
-  Components sliders;
+  ftxui::Components sliders;
 
   for (unsigned int i = 0; i < position_sliders_.size(); ++i) {
     sliders.push_back(position_sliders_[i]);
     sliders.push_back(velocity_sliders_[i]);
     sliders.push_back(effort_sliders_[i]);
   }
-  auto container = Container::Vertical(std::move(sliders));
-  renderer_ = Renderer(
+  auto container = ftxui::Container::Vertical(std::move(sliders));
+  renderer_ = ftxui::Renderer(
     container,
     [&]() {
-      Elements joint_slide_renders;
+      ftxui::Elements joint_slide_renders;
       unsigned int slider_index = 0;
 
       for (const auto & name : proc_joint_names_) {
@@ -353,42 +373,42 @@ void JointTrajectoryTuiNode::initializeTui(const std::string & urdf_str)
         const float effort_rate = 0.5F + joint_angular_effort_[slider_index] / effort_range;
 
         joint_slide_renders.push_back(
-          vbox(
+          ftxui::vbox(
           {
-            hbox({
-              text(name + ": "),
-              text("position: " + std::to_string(joint_angular_positions_[slider_index]))
-                | size(WIDTH, EQUAL, 24),
-              text("velocity: " + std::to_string(joint_angular_velocities_[slider_index]))
-                | size(WIDTH, EQUAL, 24),
-              text("effort: " + std::to_string(joint_angular_effort_[slider_index]))
-                | size(WIDTH, EQUAL, 24),
+            ftxui::hbox({
+              ftxui::text(name + ": "),
+              ftxui::text("position: " + std::to_string(joint_angular_positions_[slider_index]))
+                | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 24),
+              ftxui::text("velocity: " + std::to_string(joint_angular_velocities_[slider_index]))
+                | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 24),
+              ftxui::text("effort: " + std::to_string(joint_angular_effort_[slider_index]))
+                | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 24),
             }),
-            hbox({
-              text("state position: "),
-              gauge(position_rate),
+            ftxui::hbox({
+              ftxui::text("state position: "),
+              ftxui::gauge(position_rate),
             }),
             position_sliders_[slider_index]->Render(),
-            hbox({
-              text("state velocity: "),
-              gauge(velocity_rate),
+            ftxui::hbox({
+              ftxui::text("state velocity: "),
+              ftxui::gauge(velocity_rate),
             }),
             velocity_sliders_[slider_index]->Render(),
-            hbox({
-              text("state effort: "),
-              gauge(effort_rate),
+            ftxui::hbox({
+              ftxui::text("state effort: "),
+              ftxui::gauge(effort_rate),
             }),
             effort_sliders_[slider_index]->Render(),
           }));
         slider_index++;
       }
-      return window(
-        text(this->get_name()),
-        vbox(std::move(joint_slide_renders)) | xflex
+      return ftxui::window(
+        ftxui::text(this->get_name()),
+        ftxui::vbox(std::move(joint_slide_renders)) | ftxui::xflex
       );
     }
   );
-  renderer_ |= CatchEvent(
+  renderer_ |= ftxui::CatchEvent(
     [&](ftxui::Event event) -> bool {
       if (event.is_character()) {
         if (event.character() == "q") {
@@ -399,12 +419,12 @@ void JointTrajectoryTuiNode::initializeTui(const std::string & urdf_str)
       return false;
     }
   );
-  loop_ = std::make_unique<Loop>(&screen_, renderer_);
+  loop_ = std::make_unique<ftxui::Loop>(&screen_, renderer_);
 }
 
 void JointTrajectoryTuiNode::refreshTuiTimerCallback()
 {
-  if (not loop_) {
+  if (!loop_) {
     return;
   }
   if (loop_->HasQuitted()) {
@@ -416,6 +436,6 @@ void JointTrajectoryTuiNode::refreshTuiTimerCallback()
   publishJointTrajectoryFromDestState();
   std::this_thread::sleep_for(std::chrono::milliseconds(0));
 }
-}  // namespace ros2_viz_tui
+}  // namespace ros2_tviz
 
 RCLCPP_COMPONENTS_REGISTER_NODE(ros2_tviz::JointTrajectoryTuiNode)
