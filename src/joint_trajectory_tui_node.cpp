@@ -86,6 +86,22 @@ private:
 
 JointTrajectoryTuiNode::JointTrajectoryTuiNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("joint_trajectory_tui", options),
+  proc_joint_names_(),
+  joint_angular_positions_(),
+  joint_angular_velocities_(),
+  joint_angular_effort_(),
+  dest_joint_angular_positions_(),
+  dest_joint_angular_velocities_(),
+  dest_joint_angular_effort_(),
+  last_robot_description_(nullptr),
+  last_joint_states_(nullptr),
+  robot_description_subscriber_(nullptr),
+  joint_state_subscriber_(nullptr),
+  joint_trajectory_publisher_(nullptr),
+  refresh_tui_timer_(nullptr),
+  param_listener_(nullptr),
+  params_(nullptr),
+  loop_(nullptr),
   screen_(ftxui::ScreenInteractive::TerminalOutput())
 {
   param_listener_ = std::make_unique<joint_trajectory_tui_node::ParamListener>(
@@ -145,6 +161,10 @@ void JointTrajectoryTuiNode::subscribeRobotDesctiptionCallback(
 void JointTrajectoryTuiNode::subscribeJointStateCallback(
   const sensor_msgs::msg::JointState::ConstSharedPtr & msg)
 {
+  if (msg->name.empty()) {
+    RCLCPP_WARN(this->get_logger(), "Ignore empty joint state");
+    return;
+  }
   last_joint_states_ = msg;
 
   if (last_robot_description_) {
